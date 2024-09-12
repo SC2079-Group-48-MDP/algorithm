@@ -12,7 +12,7 @@ from model import *
 app = FastAPI()
 model = None
 
-# Add CORS middleware
+# Add CORS middleware for communicating server requests through different protocols
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allows requests from all origins. You can specify certain domains here.
@@ -37,24 +37,33 @@ def path_finding(content: dict):
     :return: a json object with a key "data" and value a dictionary with keys "distance", "path", and "commands"
     """
 
+    # Get the obstacles, big_turn, retrying, robot_x, robot_y, and robot_direction from the json data
     obstacles = content['obstacles']
+    # big_turn = int(content['big_turn'])
     retrying = content['retrying']
     robot_x, robot_y = content['robot_x'], content['robot_y']
     robot_direction = int(content['robot_dir'])
 
+    # Initialize MazeSolver object with robot size of 20x20, bottom left corner of robot at (1,1), facing north, and whether to use a big turn or not.
     maze_solver = MazeSolver(20, 20, robot_x, robot_y, robot_direction, big_turn=None)
 
+    # Add each obstacle into the MazeSolver. Each obstacle is defined by its x,y positions, its direction, and its id
     for ob in obstacles:
         maze_solver.add_obstacle(ob['x'], ob['y'], ob['d'], ob['id'])
 
     start = time.time()
+    # Get shortest path
     optimal_path, distance = maze_solver.get_optimal_order_dp(retrying=retrying)
     print(f"Time taken to find shortest path using A* search: {time.time() - start}s")
     print(f"Distance to travel: {distance} units")
     
+    # Based on the shortest path, generate commands for the robot
     commands = command_generator(optimal_path, obstacles)
 
+    # Get the starting location and add it to path_results
     path_results = [optimal_path[0].get_dict()]
+
+    # Process each command individually and append the location the robot should be after executing that command to path_results
     i = 0
     for command in commands:
         if command.startswith("SNAP"):
@@ -86,6 +95,10 @@ async def image_predict(file: UploadFile = File(...)):
         f.write(file.file.read())
     constituents = filename.split("_")
     obstacle_id = constituents[1]
+
+    ## Week 8 ## 
+    #signal = constituents[2].strip(".jpg")
+    #image_id = predict_image(filename, model, signal)
 
     image_id = predict_image_week_9(file_location, model)
 
