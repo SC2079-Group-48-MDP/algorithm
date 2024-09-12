@@ -29,6 +29,8 @@ def status():
     """
     return JSONResponse ({"result": "ok"})
 
+# When endpoint is called, takes in dictionary of values/parameters to be used in calculatiing the path finding algorithm
+# Outputs a JSON representing the results of pathfinding calculations
 @app.post("/path")
 def path_finding(content: dict):
 
@@ -78,6 +80,7 @@ def path_finding(content: dict):
             i += 1
         path_results.append(optimal_path[i].get_dict())
 
+    # Sends parameters from pathfinding to /path on API server as a JSON
     return JSONResponse({
         "data": {
             'distance': distance,
@@ -87,6 +90,8 @@ def path_finding(content: dict):
         "error": None
     })
 
+# When called, will process the image and identify which of the known images it is
+# Outputs known image id as JSON
 @app.post("/image")
 async def image_predict(file: UploadFile = File(...)):
     filename = file.filename
@@ -102,18 +107,25 @@ async def image_predict(file: UploadFile = File(...)):
 
     image_id = predict_image_week_9(file_location, model)
 
+    # Sends identifiers to /image on API server as a JSON
     result = {
         "obstacle_id": obstacle_id,
         "image_id": image_id
     }
+
+    # Returns image id as well as obstacle in JSON format
     return JSONResponse(content=result)
 
+
+# For stiching together images when called
 @app.get("/stitch")
 def stitch():
     img = stitch_image()
     img.show()
     img2 = stitch_image_own()
     img2.show()
+
+    # Return a response to show that the image stitching process 
     return JSONResponse({"result": "ok"})
 
 #if __name__ == '__main__':
