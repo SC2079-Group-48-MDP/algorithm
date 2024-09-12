@@ -6,9 +6,11 @@ import os
 import time
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
+from model import *
 
 
 app = FastAPI()
+model = None
 
 # Add CORS middleware
 app.add_middleware(
@@ -76,8 +78,8 @@ def path_finding(content: dict):
         "error": None
     })
 
-#@app.post("/image")
-#async def image_predict(file: UploadFile = File(...)):
+@app.post("/image")
+async def image_predict(file: UploadFile = File(...)):
     filename = file.filename
     file_location = f"uploads/{filename}"
     with open(file_location, "wb") as f:
@@ -93,8 +95,8 @@ def path_finding(content: dict):
     }
     return JSONResponse(content=result)
 
-#@app.get("/stitch")
-#def stitch():
+@app.get("/stitch")
+def stitch():
     img = stitch_image()
     img.show()
     img2 = stitch_image_own()
