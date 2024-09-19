@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Request
+from fastapi import FastAPI, File, UploadFile, Request, Form
 from fastapi.responses import JSONResponse
 from algo.algo import MazeSolver
 from helper import command_generator
@@ -51,7 +51,7 @@ def path_finding(content: dict):
 
     # Add each obstacle into the MazeSolver. Each obstacle is defined by its x,y positions, its direction, and its id
     for ob in obstacles:
-        maze_solver.add_obstacle(ob['x'], ob['y'], ob['d'], ob['id'])
+        maze_solver.add_obstacle(ob['x'], ob['y'], ob['d'], ob['obstacleNumber'])
 
     start = time.time()
     # Get shortest path
@@ -93,19 +93,30 @@ def path_finding(content: dict):
 # When called, will process the image and identify which of the known images it is
 # Outputs known image id as JSON
 @app.post("/image")
-async def image_predict(file: UploadFile = File(...)):
+async def image_predict(file: UploadFile = File(...), obstacle_id: str = Form(...),
+                        signal: str = Form(...)):
     filename = file.filename
+
+    image_bytes = await file.read()
+    # Add more debugging or validation here
+    print(f"Received obstacle_id: {obstacle_id}, file size: {len(image_bytes)} bytes")
     file_location = f"uploads/{filename}"
     with open(file_location, "wb") as f:
         f.write(file.file.read())
-    constituents = filename.split("_")
-    obstacle_id = constituents[1]
 
-    ## Week 8 ## 
+    model = load_model()
+
     #signal = constituents[2].strip(".jpg")
     #image_id = predict_image(filename, model, signal)
 
-    image_id = predict_image_week_9(file_location, model)
+    (image_id, annotated_img) = predict_image(image_bytes, obstacle_id, signal, model)
+
+    if annotated_img is not None:
+        cv2.imshow("Annotated Image", annotated_img)
+        cv2.waitKey(0)  # Wait for a key press to close
+        cv2.destroyAllWindows()
+    else:
+        print("Prediction failed or image could not be processed.")
 
     # Sends identifiers to /image on API server as a JSON
     result = {
@@ -120,18 +131,21 @@ async def image_predict(file: UploadFile = File(...)):
 # For stiching together images when called
 @app.get("/stitch")
 def stitch():
-    img = stitch_image()
+    image_dir = SAVE_DIR
+    save_stitched_path = "stitched_image.jpg"
+    img = stitch_images(image_dir, save_stitched_path)
     img.show()
-    img2 = stitch_image_own()
+    save_stitched_own_path = "stitched_image_own.jpg"
+    img2 = stitch_image_own(image_dir, save_stitched_own_path)
     img2.show()
 
     # Return a response to show that the image stitching process 
     return JSONResponse({"result": "ok"})
 
 #if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # app.run(host='0.0.0.0', port=5000, debug=True)
 
 #if __name__ == '__main__':
     #import uvicorn
-    uvicorn.run(app, host='127.0.0.1', port=5000)
+    # uvicorn.run(app, host='127.0.0.1', port=5000)
 
