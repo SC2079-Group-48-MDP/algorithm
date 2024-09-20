@@ -124,6 +124,9 @@ async def image_predict(file: UploadFile = File(...), obstacle_id: str = Form(..
         "image_id": image_id
     }
 
+    # For checklist (Navigating around the obstacle)
+    result['stop'] = image_id != "10"
+
     # Returns image id as well as obstacle in JSON format
     return JSONResponse(content=result)
 
