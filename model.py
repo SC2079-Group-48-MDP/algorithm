@@ -166,6 +166,8 @@ def predict_image(image_bytes, obstacle_id, signal, model):
                     'confidence': confidence,
                     'name': class_name
                 })
+            else: # If the image is Bullseye
+                return obstacle_id, "10"
 
         # Sort the predictions by bbox area
         pred_list = sorted(pred_list, key=lambda x: x['bboxArea'], reverse=True)
