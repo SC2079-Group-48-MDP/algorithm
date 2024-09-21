@@ -235,8 +235,8 @@ def command_generator(states, obstacles):
                 else:
                     commands.append(f"SNAP{states[i].screenshot_id}")
 
-    # Final command is the stop command (FIN)
-    commands.append("FIN")  
+    # Final command is the stop command (FN)
+    commands.append("FN")
 
     # Compress commands if there are consecutive forward or backward commands
     compressed_commands = [commands[0]]
