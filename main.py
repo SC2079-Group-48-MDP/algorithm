@@ -4,13 +4,14 @@ from algo.algo import MazeSolver
 from helper import command_generator
 import os
 import time
-import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from model import *
+from ultralytics import YOLO
+from threading import Thread
 
 
 app = FastAPI()
-model = None
+model = YOLO("./best.pt")
 
 # Add CORS middleware for communicating server requests through different protocols
 app.add_middleware(
@@ -70,7 +71,7 @@ def path_finding(content: dict):
     for command in commands:
         if command.startswith("SNAP"):
             continue
-        if command.startswith("FIN"):
+        if command.startswith("FN"):
             continue
         elif command.startswith("FW") or command.startswith("FS"):
             i += int(command[2:]) // 10
@@ -90,42 +91,41 @@ def path_finding(content: dict):
         "error": None
     })
 
+def display_image(frame, window_name):
+    """Display the image in a window that does not close automatically."""
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.imshow(window_name, frame)
+    cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
+    cv2.waitKey(0)
+    cv2.destroyWindow(window_name)
+
 # When called, will process the image and identify which of the known images it is
 # Outputs known image id as JSON
 @app.post("/image")
-async def image_predict(file: UploadFile = File(...), obstacle_id: str = Form(...),
-                        signal: str = Form(...)):
-    filename = file.filename
+async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(...), signal: str = Form(...)):
+    #filename = files.filename
 
-    image_bytes = await file.read()
+    image_bytes = await files.read()
     # Add more debugging or validation here
     print(f"Received obstacle_id: {obstacle_id}, file size: {len(image_bytes)} bytes")
-    file_location = f"uploads/{filename}"
-    with open(file_location, "wb") as f:
-        f.write(file.file.read())
-
-    model = load_model()
 
     #signal = constituents[2].strip(".jpg")
     #image_id = predict_image(filename, model, signal)
 
-    (image_id, annotated_img) = predict_image(image_bytes, obstacle_id, signal, model)
+    (image_id, annotated_img) = predict_image(image_bytes, obstacle_id, model)
 
     if annotated_img is not None:
-        cv2.imshow("Annotated Image", annotated_img)
-        cv2.waitKey(0)  # Wait for a key press to close
-        cv2.destroyAllWindows()
+        thread = Thread(target=display_image, args=(annotated_img,f"Obstacle ID {obstacle_id}, Image ID {image_id}"))
+        thread.start()
     else:
         print("Prediction failed or image could not be processed.")
 
     # Sends identifiers to /image on API server as a JSON
     result = {
         "obstacle_id": obstacle_id,
-        "image_id": image_id
+        "image_id": image_id,
+        "stop": image_id != "10" # For checklist (Navigating around the obstacle)
     }
-
-    # For checklist (Navigating around the obstacle)
-    result['stop'] = image_id != "10"
 
     # Returns image id as well as obstacle in JSON format
     return JSONResponse(content=result)
@@ -137,10 +137,12 @@ def stitch():
     image_dir = SAVE_DIR
     save_stitched_path = "stitched_image.jpg"
     img = stitch_images(image_dir, save_stitched_path)
-    img.show()
+    if img:
+        display_image(img, "Stitched Image")
     save_stitched_own_path = "stitched_image_own.jpg"
     img2 = stitch_image_own(image_dir, save_stitched_own_path)
-    img2.show()
+    if img2:
+        display_image(img2, "Stitched Image (Own)")
 
     # Return a response to show that the image stitching process 
     return JSONResponse({"result": "ok"})
