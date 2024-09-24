@@ -267,9 +267,17 @@ def predict_image(image_bytes, obstacle_id,  model):
             cv2.putText(frame, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
             # Save the annotated frame
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             save_path = os.path.join(SAVE_DIR,
-                        f"{obstacle_id}_{final_image_id}_{datetime.now()}.jpg")
-            cv2.imwrite(save_path, frame)
+                        f"{obstacle_id}_{final_image_id}_{timestamp}.jpg")
+            # Log the save path to debug
+            print(f"Saving annotated image to: {save_path}")
+            # Save the annotated frame
+            if cv2.imwrite(save_path, frame):
+                print("Image saved successfully.")
+            else:
+                print("Failed to save the image.")
+            # cv2.imwrite(save_path, frame)
 
             return (final_image_id, frame)
 
