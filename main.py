@@ -135,9 +135,6 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
     return JSONResponse(content=result)
 
 
-
-
-
 # For stiching together images when called
 @app.get("/stitch")
 def stitch():
