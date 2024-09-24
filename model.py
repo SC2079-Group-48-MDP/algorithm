@@ -157,9 +157,11 @@ def predict_image(image_bytes, obstacle_id,  model):
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             save_path = os.path.join(SAVE_DIR,
                         f"{obstacle_id}_{final_image_id}_{timestamp}.jpg")
+            # Try with .jpeg, .png, .bmp
+
             # Log the save path to debug
             print(f"Saving annotated image to: {save_path}")
-            # Save the annotated frame
+            # Save the annotated frame to save_path
             if cv2.imwrite(save_path, frame):
                 print("Image saved successfully.")
             else:
