@@ -115,20 +115,27 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
     (image_id, annotated_img) = predict_image(image_bytes, obstacle_id, model)
 
     if annotated_img is not None:
-        thread = Thread(target=display_image, args=(annotated_img,f"Obstacle ID {obstacle_id}, Image ID {image_id}"))
-        thread.start()
+        # thread = Thread(target=display_image, args=(annotated_img,f"Obstacle ID {obstacle_id}, Image ID {image_id}"))
+        # thread.start()
+        display_image(annotated_img, f"Obstacle ID {obstacle_id}, Image ID {image_id}")
+        # Sends identifiers to /image on API server as a JSON
+        result = {
+            "obstacle_id": obstacle_id,
+            "image_id": image_id,
+            "stop": image_id != 10 #For checklist (Navigating around the obstacle)
+        }
+        
     else:
         print("Prediction failed or image could not be processed.")
-
-    # Sends identifiers to /image on API server as a JSON
-    result = {
-        "obstacle_id": obstacle_id,
-        "image_id": image_id,
-        "stop": image_id != "10" # For checklist (Navigating around the obstacle)
-    }
-
-    # Returns image id as well as obstacle in JSON format
+        result = {
+            "obstacle_id": obstacle_id,
+            "retry": True
+        }
+    
     return JSONResponse(content=result)
+
+
+
 
 
 # For stiching together images when called

@@ -272,6 +272,7 @@ def predict_image(image_bytes, obstacle_id,  model):
             cv2.imwrite(save_path, frame)
 
             return (final_image_id, frame)
+    else: return ("NA", None)
 
 
 def predict_image_week_9(image, model):
