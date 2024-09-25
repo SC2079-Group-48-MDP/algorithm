@@ -10,11 +10,18 @@ import string
 import numpy as np
 import random
 from datetime import datetime
+import logging
+
+logger = logging.basicConfig(level=logging.DEBUG)
 
 
 SAVE_DIR = "./annotated_images"
 if not os.path.exists(SAVE_DIR):
     os.makedirs(SAVE_DIR)
+
+STITCH_DIR = "./stitched_images"
+if not os.path.exists(STITCH_DIR):
+    os.makedirs(STITCH_DIR)
 
 yolo_image_mapping = {
     '1': 0, '2': 1, '3': 2,'4': 3,'5': 4,'6': 5,'7': 6,'8': 7,'9': 8,'A': 9,'B': 10,
@@ -229,7 +236,7 @@ def predict_image(image_bytes, obstacle_id,  model):
 #     return image_id
 
 
-def stitch_images(image_dir, save_stitched_path, min_obstacle_id=1, max_obstacle_id=8):
+def stitch_images():
     """
     Stitch the latest images from a specified obstacle range.
 
@@ -247,7 +254,9 @@ def stitch_images(image_dir, save_stitched_path, min_obstacle_id=1, max_obstacle
     images = []
     latest_images = {}
 
-    for filename in os.listdir(image_dir):
+    min_obstacle_id=1
+    max_obstacle_id=8
+    for filename in os.listdir(SAVE_DIR):
         parts = filename.split('_')
         if len(parts) < 3:
             continue  # Skip files that don't match the expected format
@@ -264,7 +273,7 @@ def stitch_images(image_dir, save_stitched_path, min_obstacle_id=1, max_obstacle
                 latest_images[obstacle_id] = {'timestamp': timestamp, 'filename': filename}
 
     for obstacle_id in sorted(latest_images.keys()):
-        img_path = os.path.join(image_dir, latest_images[obstacle_id]['filename'])
+        img_path = os.path.join(SAVE_DIR, latest_images[obstacle_id]['filename'])
         img = cv2.imread(img_path)
         if img is not None:
             images.append(img)
@@ -272,9 +281,15 @@ def stitch_images(image_dir, save_stitched_path, min_obstacle_id=1, max_obstacle
     if len(images) < 2:
         return "Error: At least two images are required for stitching."
 
-    stitched_image = cv2.hconcat(images)  # Horizontally concatenate the images
 
-    cv2.imwrite(save_stitched_path, stitched_image)
+    stitched_image = cv2.hconcat(images)  # Horizontally concatenate the images
+    print("Images stitched!")
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    stitch_path = os.path.join(STITCH_DIR,f'stitche_{timestamp}.jpg')
+    if cv2.imwrite(stitch_path, stitched_image):
+        print("Image saved successfully.")
+    else:
+        print("Failed to save the image.")
     return stitched_image
 
 def stitch_image_own():
@@ -284,6 +299,8 @@ def stitch_image_own():
     Basically similar to stitch_image() but with different folder names and slightly different drawing of bounding boxes and text
     """
     imgFolder = 'own_results'
+    if not os.path.exists(imgFolder):
+        os.makedirs(imgFolder)
     stitchedPath = os.path.join(imgFolder, f'stitched-{int(time.time())}.jpeg')
 
     imgPaths = glob.glob(os.path.join(imgFolder+"/annotated_image_*.jpg"))

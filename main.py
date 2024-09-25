@@ -137,13 +137,12 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
 # For stiching together images when called
 @app.get("/stitch")
 def stitch():
-    image_dir = SAVE_DIR
-    save_stitched_path = "stitched_image.jpg"
-    img = stitch_images(image_dir, save_stitched_path)
+
+    img = stitch_images()
     # if img:
     #     display_image(img, "Stitched Image")
     # save_stitched_own_path = "stitched_image_own.jpg"
-    # img2 = stitch_image_own(image_dir, save_stitched_own_path)
+    # img2 = stitch_image_own()
     # if img2:
     #     display_image(img2, "Stitched Image (Own)")
 
