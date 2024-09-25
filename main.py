@@ -115,7 +115,7 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
     if annotated_img is not None:
         # thread = Thread(target=display_image, args=(annotated_img,f"Obstacle ID {obstacle_id}, Image ID {image_id}"))
         # thread.start()
-        
+
         # display_image(annotated_img, f"Obstacle ID {obstacle_id}, Image ID {image_id}")
         # Sends identifiers to /image on API server as a JSON
         result = {
@@ -140,12 +140,12 @@ def stitch():
     image_dir = SAVE_DIR
     save_stitched_path = "stitched_image.jpg"
     img = stitch_images(image_dir, save_stitched_path)
-    if img:
-        display_image(img, "Stitched Image")
-    save_stitched_own_path = "stitched_image_own.jpg"
-    img2 = stitch_image_own(image_dir, save_stitched_own_path)
-    if img2:
-        display_image(img2, "Stitched Image (Own)")
+    # if img:
+    #     display_image(img, "Stitched Image")
+    # save_stitched_own_path = "stitched_image_own.jpg"
+    # img2 = stitch_image_own(image_dir, save_stitched_own_path)
+    # if img2:
+    #     display_image(img2, "Stitched Image (Own)")
 
     # Return a response to show that the image stitching process 
     return JSONResponse({"result": "ok"})
