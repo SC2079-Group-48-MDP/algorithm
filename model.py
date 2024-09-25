@@ -120,119 +120,6 @@ def draw_own_bbox(img,x1,y1,x2,y2,label,color=(36,255,12),text_color=(0,0,0)):
 
     return img
 
-# def predict_image(image_bytes, obstacle_id, signal, model):
-#     """
-#     Process the image and return the best prediction based on the robot's signal.
-#
-#     Inputs
-#     ------
-#     image_bytes: bytes - the image data in bytes
-#     obstacle_id: str - the obstacle ID
-#     signal: str - the direction signal ('L', 'R', 'C') to filter predictions
-#     model: torch.hub.load - model to be used for prediction
-#
-#     Returns
-#     -------
-#     tuple - (final image ID, annotated image)
-#     """
-#     try:
-#         # Convert the bytes to a NumPy array and decode the image using OpenCV
-#         image_array = np.frombuffer(image_bytes, np.uint8)
-#         frame = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
-#
-#         if frame is None:
-#             return 'NA', None
-#
-#         # Run object detection using the YOLO model
-#         results = model(frame)
-#
-#         # Extract bounding boxes and other details directly from results
-#         pred_list = []
-#         for box in results[0].boxes:
-#             x1, y1, x2, y2 = map(int, box.xyxy[0])
-#             bboxHt = y2 - y1
-#             bboxWt = x2 - x1
-#             bboxArea = bboxHt * bboxWt
-#             class_id = int(box.cls.item())
-#             confidence = box.conf.item()
-#             class_name = next((key for key, value in yolo_image_mapping.items() if value == class_id), "Unknown")
-#
-#             if class_name != 'BullsEye':  # Filter out BullsEye
-#                 pred_list.append({
-#                     'xmin': x1,
-#                     'ymin': y1,
-#                     'xmax': x2,
-#                     'ymax': y2,
-#                     'bboxArea': bboxArea,
-#                     'confidence': confidence,
-#                     'name': class_name
-#                 })
-#             else: # If the image is Bullseye
-#                 return obstacle_id, "10"
-#
-#         # Sort the predictions by bbox area
-#         pred_list = sorted(pred_list, key=lambda x: x['bboxArea'], reverse=True)
-#
-#         # Initialize prediction to NA
-#         pred = 'NA'
-#
-#         # If only one prediction is detected, use it
-#         if len(pred_list) == 1:
-#             pred = pred_list[0]
-#
-#         # If more than one label is detected, filter by confidence, area, and the signal (L, R, C)
-#         elif len(pred_list) > 1:
-#             pred_shortlist = []
-#             current_area = pred_list[0]['bboxArea']
-#
-#             # Filter by confidence and area
-#             for row in pred_list:
-#                 if row['confidence'] > 0.5 and ((current_area * 0.8 <= row['bboxArea']) or (row['name'] == 'One' and current_area * 0.6 <= row['bboxArea'])):
-#                     pred_shortlist.append(row)
-#                     current_area = row['bboxArea']
-#
-#             if len(pred_shortlist) == 1:
-#                 pred = pred_shortlist[0]
-#             else:
-#                 # Filter further using the signal ('L', 'R', 'C')
-#                 pred_shortlist.sort(key=lambda x: x['xmin'])
-#
-#                 if signal == 'L':
-#                     pred = pred_shortlist[0]  # Leftmost prediction
-#                 elif signal == 'R':
-#                     pred = pred_shortlist[-1]  # Rightmost prediction
-#                 elif signal == 'C':
-#                     for row in pred_shortlist:
-#                         if 250 < row['xmin'] < 774:  # Central prediction
-#                             pred = row
-#                             break
-#                     if isinstance(pred, str):  # If no central prediction found
-#                         pred = pred_shortlist[-1]  # Largest area
-#
-#         # Annotate the image with the selected prediction
-#         if isinstance(pred, dict):
-#             x1, y1, x2, y2 = pred['xmin'], pred['ymin'], pred['xmax'], pred['ymax']
-#             label = pred['name']
-#             image_id = str(name_to_id.get(label, 'NA'))
-#
-#             # Draw the bounding box and label
-#             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-#             cv2.putText(frame, f"{label}, ID: {image_id}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-#
-#             # Save the annotated frame
-#             save_path = os.path.join(SAVE_DIR,
-#                     f"{obstacle_id}_{image_id}_{datetime.now()}.jpg")
-#             cv2.imwrite(save_path, frame)
-#             display_image(frame, f"Obstacle {obstacle_id}, Class: {label}")
-#
-#             return image_id, frame
-#         else:
-#             return 'NA', frame
-#
-#     except Exception as e:
-#         print(f"Error during prediction: {e}")
-#         return 'NA', None
-
 def predict_image(image_bytes, obstacle_id,  model):
     # Convert the bytes data to a NumPy array
     image_array = np.frombuffer(image_bytes, np.uint8)
@@ -267,11 +154,22 @@ def predict_image(image_bytes, obstacle_id,  model):
             cv2.putText(frame, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
             # Save the annotated frame
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             save_path = os.path.join(SAVE_DIR,
-                        f"{obstacle_id}_{final_image_id}_{datetime.now()}.jpg")
-            cv2.imwrite(save_path, frame)
+                        f"{obstacle_id}_{final_image_id}_{timestamp}.jpg")
+            # Try with .jpeg, .png, .bmp
+
+            # Log the save path to debug
+            print(f"Saving annotated image to: {save_path}")
+            # Save the annotated frame to save_path
+            if cv2.imwrite(save_path, frame):
+                print("Image saved successfully.")
+            else:
+                print("Failed to save the image.")
+            # cv2.imwrite(save_path, frame)
 
             return (final_image_id, frame)
+    else: return ("NA", None)
 
 
 def predict_image_week_9(image, model):
