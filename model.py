@@ -126,18 +126,18 @@ def predict_image(image_bytes, obstacle_id,  model):
     # Decode the image using OpenCV
     frame = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    save_path = os.path.join(SAVE_DIR,
-                        f"{timestamp}_image.jpg")
+    # timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    # save_path = os.path.join(SAVE_DIR,
+    #                     f"{timestamp}_image.jpg")
     
-    cv2.imwrite(save_path, frame)
+    # cv2.imwrite(save_path, frame)
 
     # Check if the frame is received correctly
     if frame is not None:
         # Run object detection using YOLO model
         results = model(frame)
 
-        print(results)
+        # print(results)
         
         final_image_id = 'NA'
         # Process the results to draw bounding boxes and labels
