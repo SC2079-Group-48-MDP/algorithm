@@ -108,15 +108,13 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
     image_bytes = await files.read()
     # Add more debugging or validation here
     print(f"Received obstacle_id: {obstacle_id}, file size: {len(image_bytes)} bytes")
-
-    #signal = constituents[2].strip(".jpg")
     #image_id = predict_image(filename, model, signal)
 
     (image_id, annotated_img) = predict_image(image_bytes, obstacle_id, model)
 
     if annotated_img is not None:
-        thread = Thread(target=display_image, args=(annotated_img,f"Obstacle ID {obstacle_id}, Image ID {image_id}"))
-        thread.start()
+        # thread = Thread(target=display_image, args=(annotated_img,f"Obstacle ID {obstacle_id}, Image ID {image_id}"))
+        # thread.start()
         # display_image(annotated_img, f"Obstacle ID {obstacle_id}, Image ID {image_id}")
         # Sends identifiers to /image on API server as a JSON
         result = {

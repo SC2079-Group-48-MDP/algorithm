@@ -126,10 +126,19 @@ def predict_image(image_bytes, obstacle_id,  model):
     # Decode the image using OpenCV
     frame = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
 
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    save_path = os.path.join(SAVE_DIR,
+                        f"{timestamp}_image.jpg")
+    
+    cv2.imwrite(save_path, frame)
+
     # Check if the frame is received correctly
     if frame is not None:
         # Run object detection using YOLO model
         results = model(frame)
+
+        print(results)
+        
         final_image_id = 'NA'
         # Process the results to draw bounding boxes and labels
         # for result in results:
@@ -150,8 +159,8 @@ def predict_image(image_bytes, obstacle_id,  model):
             label_text = "Stop" if label_text == "Dot" else label_text
 
             # Draw the bounding rectangle
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(frame, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+            cv2.rectangle(frame, (x1+1, y1+1), (x2+1, y2+1), (0, 255, 0), 5)
+            cv2.putText(frame, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 7)
 
             # Save the annotated frame
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
