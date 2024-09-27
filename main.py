@@ -52,7 +52,7 @@ def path_finding(content: dict):
 
     # Add each obstacle into the MazeSolver. Each obstacle is defined by its x,y positions, its direction, and its id
     for ob in obstacles:
-        maze_solver.add_obstacle(ob['x'], ob['y'], ob['d'], ob['obstacleNumber'])
+        maze_solver.add_obstacle(ob['x'], ob['y'], ob['d'], ob['id'])
 
     start = time.time()
     # Get shortest path
@@ -65,6 +65,9 @@ def path_finding(content: dict):
 
     # Get the starting location and add it to path_results
     path_results = [optimal_path[0].get_dict()]
+
+    for c in commands:
+       print(f"First print;Commands generated: {c,}")
 
     # Process each command individually and append the location the robot should be after executing that command to path_results
     i = 0
@@ -80,6 +83,9 @@ def path_finding(content: dict):
         else:
             i += 1
         path_results.append(optimal_path[i].get_dict())
+
+    for c in commands:
+       print(f"Second print; Commands generated: {c,}")
 
     # Sends parameters from pathfinding to /path on API server as a JSON
     return JSONResponse({

@@ -31,7 +31,7 @@ def command_generator(states, obstacles):
     """
 
     # Convert the list of obstacles into a dictionary with key as the obstacle id and value as the obstacle
-    obstacles_dict = {ob['obstacleNumber']: ob for ob in obstacles}
+    obstacles_dict = {ob['id']: ob for ob in obstacles}
     
     # Initialize commands list
     commands = []
