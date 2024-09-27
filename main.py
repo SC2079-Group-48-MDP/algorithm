@@ -142,10 +142,10 @@ def stitch():
     img = stitch_images(image_dir, save_stitched_path)
     if img:
         display_image(img, "Stitched Image")
-    save_stitched_own_path = "stitched_image_own.jpg"
-    img2 = stitch_image_own(image_dir, save_stitched_own_path)
-    if img2:
-        display_image(img2, "Stitched Image (Own)")
+    # save_stitched_own_path = "stitched_image_own.jpg"
+    # img2 = stitch_image_own(image_dir, save_stitched_own_path)
+    # if img2:
+    #     display_image(img2, "Stitched Image (Own)")
 
     # Return a response to show that the image stitching process 
     return JSONResponse({"result": "ok"})
