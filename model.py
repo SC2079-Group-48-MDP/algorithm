@@ -228,7 +228,7 @@ def predict_image_week_9(image, model):
     return image_id
 
 
-def stitch_images(image_dir, save_stitched_path):
+def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
     """
     Stitch the latest images from a specified obstacle range.
 
@@ -248,6 +248,9 @@ def stitch_images(image_dir, save_stitched_path):
     min_obstacle_id = 1
     max_obstacle_id = 8
 
+    if not os.path.exists(save_stitched_folder):
+        os.makedirs(save_stitched_folder)
+
     for filename in os.listdir(image_dir):
         parts = filename.split('_')
         if len(parts) < 3:
@@ -256,7 +259,7 @@ def stitch_images(image_dir, save_stitched_path):
         try:
             obstacle_id = int(parts[0])
             timestamp_str = parts[2].replace('.jpg', '')
-            timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S.%f')
+            timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d-%H-%M-%S')
         except (ValueError, IndexError):
             continue
 
@@ -275,8 +278,10 @@ def stitch_images(image_dir, save_stitched_path):
 
     stitched_image = cv2.hconcat(images)  # Horizontally concatenate the images
 
-    cv2.imwrite(save_stitched_path, stitched_image)
-    return stitched_image
+    save_path = os.path.join(save_stitched_folder,save_stitched_path)
+
+    cv2.imwrite(save_path, stitched_image)
+    return save_path
 
 # def stitch_image_own():
 #     """
