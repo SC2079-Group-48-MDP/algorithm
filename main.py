@@ -80,7 +80,7 @@ def path_finding(content: dict):
         else:
             i += 1
         path_results.append(optimal_path[i].get_dict())
-
+    print(commands)
     # Sends parameters from pathfinding to /path on API server as a JSON
     return JSONResponse({
         "data": {
@@ -138,22 +138,13 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
 @app.get("/stitch")
 def stitch():
     image_dir = SAVE_DIR
-    save_stitched_path = "stitched_image.jpg"
-    img = stitch_images(image_dir, save_stitched_path)
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    save_stitched_folder = './stitched_images'
+    save_stitched_path = os.path.join(SAVE_DIR, f"{timestamp}_stitched_image.jpg")
+    img = stitch_images(image_dir, save_stitched_folder, save_stitched_path)
     if img:
         display_image(img, "Stitched Image")
-    save_stitched_own_path = "stitched_image_own.jpg"
-    img2 = stitch_image_own(image_dir, save_stitched_own_path)
-    if img2:
-        display_image(img2, "Stitched Image (Own)")
 
     # Return a response to show that the image stitching process 
-    return JSONResponse({"result": "ok"})
-
-#if __name__ == '__main__':
-    # app.run(host='0.0.0.0', port=5000, debug=True)
-
-#if __name__ == '__main__':
-    #import uvicorn
-    # uvicorn.run(app, host='127.0.0.1', port=5000)
+    return JSONResponse({"result": "Stitching is successful!"})
 

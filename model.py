@@ -69,183 +69,113 @@ def display_image(frame, window_name):
     cv2.waitKey(0)  # The window will remain open indefinitely until a key is pressed
     cv2.destroyWindow(window_name)
 
-def draw_own_bbox(img,x1,y1,x2,y2,label,color=(36,255,12),text_color=(0,0,0)):
+def draw_label(image, x1, y1, x2, y2, label_text):
     """
-    Draw bounding box on the image with text label and save both the raw and annotated image in the 'own_results' folder
-
-    Inputs
-    ------
-    img: numpy.ndarray - image on which the bounding box is to be drawn
-
-    x1: int - x coordinate of the top left corner of the bounding box
-
-    y1: int - y coordinate of the top left corner of the bounding box
-
-    x2: int - x coordinate of the bottom right corner of the bounding box
-
-    y2: int - y coordinate of the bottom right corner of the bounding box
-
-    label: str - label to be written on the bounding box
-
-    color: tuple - color of the bounding box
-
-    text_color: tuple - color of the text label
-
-    Returns
-    -------
-    img - image
-
+    Draws a label on the image based on bounding box coordinates.
+    Parameters:
+        image (np.array): The image where labels will be drawn.
+        x1, y1, x2, y2 (int): Coordinates of the bounding box.
+        label_text (str): Text to put as a label.
+    Returns:
+        np.array: The image with the label drawn.
     """
-    # Reformat the label to {label name}-{label id}
-    label = label + "-" + str(name_to_id[label])
-    # Convert the coordinates to int
-    x1 = int(x1)
-    x2 = int(x2)
-    y1 = int(y1)
-    y2 = int(y2)
-    # Create a random string to be used as the suffix for the image name, just in case the same name is accidentally used
-    rand = str(int(time.time()))
+    img_height, img_width = image.shape[:2]
 
-    # Save the raw image
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    cv2.imwrite(f"own_results/raw_image_{label}_{rand}.jpg", img)
+    # Calculate label position to avoid being cut off
+    label_position = (x1, max(20, y1 - 10))  # Default above the box
+    if y1 < 20:
+        label_position = (x1, y2 + 20)  # Move below the box if too close to top
 
-    # Draw the bounding box
-    img = cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
-    # For the text background, find space required by the text so that we can put a background with that amount of width.
-    (w, h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
-    # Print the text  
-    img = cv2.rectangle(img, (x1, y1 - 20), (x1 + w, y1), color, -1)
-    img = cv2.putText(img, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, text_color, 1)
+    # Ensure label does not go beyond image boundaries
+    if x1 + 7 * len(label_text) > img_width:  # Estimate width of text
+        label_position = (img_width - 7 * len(label_text), label_position[1])
 
-    return img
+    # Draw bounding box and label
+    cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    cv2.putText(image, label_text, label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+    return image
 
-def predict_image(image_bytes, obstacle_id,  model):
+
+async def predict_image(image_bytes, obstacle_id, model):
     # Convert the bytes data to a NumPy array
     image_array = np.frombuffer(image_bytes, np.uint8)
     # Decode the image using OpenCV
     frame = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
 
-    # timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    # save_path = os.path.join(SAVE_DIR,
-    #                     f"{timestamp}_image.jpg")
-    
-    # cv2.imwrite(save_path, frame)
-
     # Check if the frame is received correctly
     if frame is not None:
-        # Run object detection using YOLO model
+
+        # Retrieve the dimensions of the frame
+        img_height, img_width, _ = frame.shape
+
+        # Run object detection using the provided model
         results = model(frame)
 
-        # print(results)
-        
-        final_image_id = 'NA'
-        # Process the results to draw bounding boxes and labels
-        # for result in results:
+        # Check if any objects were detected
+        if not results or len(results[0].boxes) == 0:
+            return "NA", None
+
+        # Find the largest bounding box
+        max_area = 0
+        selected_box = None
         for box in results[0].boxes:
-            # Get bounding box coordinates
             x1, y1, x2, y2 = map(int, box.xyxy[0])
+            area = (x2 - x1) * (y2 - y1)
+            if area > max_area:
+                max_area = area
+                selected_box = box
 
-            class_id = int(box.cls.item())
-            # Use the class ID to get the descriptive name from YOLO mapping
-            class_name = next((key for key, value in yolo_image_mapping.items()
-                               if value == class_id), "Unknown")
+        if selected_box is None:
+            return "NA", None
 
-            # Use the descriptive name to get the final image ID
-            final_image_id = name_to_id.get(class_name, "NA")
+        # Process the selected result
+        x1, y1, x2, y2 = map(int, selected_box.xyxy[0])
+        class_id = int(selected_box.cls.item())
+        class_name = next((key for key, value in yolo_image_mapping.items() if value == class_id), "Unknown")
+        final_image_id = name_to_id.get(class_name, "NA")
 
-            # Draw bounding box and label
-            label_text = f"{class_name}, Image ID: {final_image_id}"
-            label_text = "Stop" if label_text == "Dot" else label_text
+        # Adjust the class_name if it is 'Dot'
+        adjusted_class_name = "Stop" if class_name == "Dot" else class_name
 
-            # Draw the bounding rectangle
-            cv2.rectangle(frame, (x1+1, y1+1), (x2+1, y2+1), (0, 255, 0), 5)
-            cv2.putText(frame, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 7)
+        # Prepare the label_text with the adjusted class name and the image ID
+        label_text = f"{adjusted_class_name}, Image ID: {final_image_id}"
 
-            # Save the annotated frame
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            save_path = os.path.join(SAVE_DIR,
-                        f"{obstacle_id}_{final_image_id}_{timestamp}.jpg")
-            # Try with .jpeg, .png, .bmp
+        # Draw label
+        frame = draw_label(frame, x1, y1, x2, y2, label_text)
 
-            # Log the save path to debug
-            print(f"Saving annotated image to: {save_path}")
-            # Save the annotated frame to save_path
-            if cv2.imwrite(save_path, frame):
-                print("Image saved successfully.")
-            else:
-                print("Failed to save the image.")
-            # cv2.imwrite(save_path, frame)
+        # Save the annotated frame
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        save_path = os.path.join(SAVE_DIR, f"{obstacle_id}_{final_image_id}_{timestamp}.jpg")
+        cv2.imwrite(save_path, frame)
 
-            return (final_image_id, frame)
-    else: return ("NA", None)
-
-
-def predict_image_week_9(image, model):
-    # Load the image
-    img = Image.open(os.path.join('uploads', image))
-    # Run inference
-    results = model(img)
-    # Save the results
-    results.save('runs')
-    # Convert the results to a dataframe
-    df_results = results.pandas().xyxy[0]
-    # Calculate the height and width of the bounding box and the area of the bounding box
-    df_results['bboxHt'] = df_results['ymax'] - df_results['ymin']
-    df_results['bboxWt'] = df_results['xmax'] - df_results['xmin']
-    df_results['bboxArea'] = df_results['bboxHt'] * df_results['bboxWt']
-
-    # Label with largest bbox height will be last
-    df_results = df_results.sort_values('bboxArea', ascending=False)
-    pred_list = df_results 
-    pred = 'NA'
-    # If prediction list is not empty
-    if pred_list.size != 0:
-        # Go through the predictions, and choose the first one with confidence > 0.5
-        for _, row in pred_list.iterrows():
-            if row['name'] != 'Bullseye' and row['confidence'] > 0.5:
-                pred = row    
-                break
-
-        # Draw the bounding box on the image 
-        if not isinstance(pred,str):
-            draw_own_bbox(np.array(img), pred['xmin'], pred['ymin'], pred['xmax'], pred['ymax'], pred['name'])
-        
-    # Dictionary is shorter as only two symbols, left and right are needed
-    name_to_id = {
-        "NA": 'NA',
-        "Bullseye": 10,
-        "Right": 38,
-        "Left": 39,
-        "Right Arrow": 38,
-        "Left Arrow": 39,
-    }
-    # Return the image id
-    if not isinstance(pred,str):
-        image_id = str(name_to_id[pred['name']])
+        return final_image_id, frame
     else:
-        image_id = 'NA'
-    return image_id
+        return "NA", None
 
-
-def stitch_images(image_dir, save_stitched_path, min_obstacle_id=1, max_obstacle_id=8):
+def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
     """
-    Stitch the latest images from a specified obstacle range.
+    Stitch the latest images into two rows of up to 4 images each.
 
     Inputs
     ------
     image_dir: str - the directory where images are stored
+    save_stitched_folder: str - the folder to save the stitched image
     save_stitched_path: str - the path to save the stitched image
-    min_obstacle_id: int - minimum obstacle ID to consider
-    max_obstacle_id: int - maximum obstacle ID to consider
 
     Returns
     -------
     str - path to the saved stitched image
     """
+
     images = []
     latest_images = {}
+    min_obstacle_id = 1
+    max_obstacle_id = 8
 
+    if not os.path.exists(save_stitched_folder):
+        os.makedirs(save_stitched_folder)
+
+    # Find the latest images for each obstacle within the specified range
     for filename in os.listdir(image_dir):
         parts = filename.split('_')
         if len(parts) < 3:
@@ -254,7 +184,7 @@ def stitch_images(image_dir, save_stitched_path, min_obstacle_id=1, max_obstacle
         try:
             obstacle_id = int(parts[0])
             timestamp_str = parts[2].replace('.jpg', '')
-            timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S.%f')
+            timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d-%H-%M-%S')
         except (ValueError, IndexError):
             continue
 
@@ -262,19 +192,46 @@ def stitch_images(image_dir, save_stitched_path, min_obstacle_id=1, max_obstacle
             if obstacle_id not in latest_images or latest_images[obstacle_id]['timestamp'] < timestamp:
                 latest_images[obstacle_id] = {'timestamp': timestamp, 'filename': filename}
 
+    # Load the latest images
     for obstacle_id in sorted(latest_images.keys()):
         img_path = os.path.join(image_dir, latest_images[obstacle_id]['filename'])
         img = cv2.imread(img_path)
         if img is not None:
             images.append(img)
 
+    # Ensure there are at least 2 images to stitch
     if len(images) < 2:
         return "Error: At least two images are required for stitching."
 
-    stitched_image = cv2.hconcat(images)  # Horizontally concatenate the images
+    # Split images into two rows with up to 4 images per row
+    row1_images = images[:4]  # First 4 images for the first row
+    row2_images = images[4:8]  # Next 4 images for the second row
 
-    cv2.imwrite(save_stitched_path, stitched_image)
-    return stitched_image
+    # Horizontally concatenate the images in each row
+    if len(row1_images) > 1:
+        row1_stitched = cv2.hconcat(row1_images)
+    else:
+        row1_stitched = row1_images[0]  # If only one image in the row
+
+    if row2_images:
+        if len(row2_images) > 1:
+            row2_stitched = cv2.hconcat(row2_images)
+        else:
+            row2_stitched = row2_images[0]  # If only one image in the row
+    else:
+        row2_stitched = None
+
+    # Vertically concatenate the two rows if both rows exist
+    if row2_stitched is not None:
+        stitched_image = cv2.vconcat([row1_stitched, row2_stitched])
+    else:
+        stitched_image = row1_stitched
+
+    # Save the stitched image
+    save_path = os.path.join(save_stitched_folder, save_stitched_path)
+    cv2.imwrite(save_path, stitched_image)
+
+    return save_path
 
 def stitch_image_own():
     """
