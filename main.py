@@ -140,10 +140,10 @@ def stitch():
     image_dir = SAVE_DIR
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     save_stitched_folder = './stitched_images'
-    save_stitched_path = os.path.join(SAVE_DIR, f"{timestamp}_stitched_image.jpg")
+    save_stitched_path = f"{timestamp}_stitched_image.jpg"
     img = stitch_images(image_dir, save_stitched_folder, save_stitched_path)
-    if img:
-        display_image(img, "Stitched Image")
+    # if img:
+    #     display_image(img, "Stitched Image")
 
     # Return a response to show that the image stitching process 
     return JSONResponse({"result": "Stitching is successful!"})

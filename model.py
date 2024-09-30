@@ -104,7 +104,6 @@ async def predict_image(image_bytes, obstacle_id, model):
 
     # Check if the frame is received correctly
     if frame is not None:
-
         # Retrieve the dimensions of the frame
         img_height, img_width, _ = frame.shape
 
