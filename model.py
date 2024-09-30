@@ -138,6 +138,9 @@ def predict_image(image_bytes, obstacle_id,  model):
         results = model(frame)
 
         # print(results)
+
+        if len(results[0].boxes) == 0:
+            return ("NA", None)
         
         final_image_id = 'NA'
         # Process the results to draw bounding boxes and labels
