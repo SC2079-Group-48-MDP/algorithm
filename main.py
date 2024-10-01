@@ -41,6 +41,7 @@ def path_finding(content: dict):
 
     # Get the obstacles, big_turn, retrying, robot_x, robot_y, and robot_direction from the json data
     obstacles = content['obstacles']
+    print(obstacles)
     # big_turn = int(content['big_turn'])
     retrying = content['retrying']
     robot_x, robot_y = content['robot_x'], content['robot_y']
@@ -79,7 +80,12 @@ def path_finding(content: dict):
         else:
             i += 1
         path_results.append(optimal_path[i].get_dict())
+    
+    if len(commands) == 1 and commands[0] == "FN":
+        commands = ["BW10", f"SNAP{obstacles[0]['obstacleNumber']}", "FN"]
+    
     print(commands)
+
     # Sends parameters from pathfinding to /path on API server as a JSON
     return JSONResponse({
         "data": {
