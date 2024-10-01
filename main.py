@@ -9,7 +9,6 @@ from model import *
 from ultralytics import YOLO
 from threading import Thread
 
-
 app = FastAPI()
 model = YOLO("./best.pt")
 
@@ -110,7 +109,7 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
     print(f"Received obstacle_id: {obstacle_id}, file size: {len(image_bytes)} bytes")
     #image_id = predict_image(filename, model, signal)
 
-    (image_id, annotated_img) = predict_image(image_bytes, obstacle_id, model)
+    image_id, annotated_img = predict_image(image_bytes, obstacle_id, model)
 
     if annotated_img is not None:
         # thread = Thread(target=display_image, args=(annotated_img,f"Obstacle ID {obstacle_id}, Image ID {image_id}"))
@@ -128,7 +127,8 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
         print("Prediction failed or image could not be processed.")
         result = {
             "obstacle_id": obstacle_id,
-            "retry": True
+            "retry": True,
+            "image_id": image_id,
         }
     
     return JSONResponse(content=result)
@@ -137,7 +137,7 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
 # For stiching together images when called
 @app.get("/stitch")
 def stitch():
-    image_dir = SAVE_DIR
+    image_dir = './annotated_images'
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     save_stitched_folder = './stitched_images'
     save_stitched_path = f"{timestamp}_stitched_image.jpg"

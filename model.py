@@ -91,12 +91,12 @@ def draw_label(image, x1, y1, x2, y2, label_text):
         label_position = (img_width - 7 * len(label_text), label_position[1])
 
     # Draw bounding box and label
-    cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    cv2.putText(image, label_text, label_position, cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+    cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 10)
+    cv2.putText(image, label_text, label_position, cv2.FONT_HERSHEY_SIMPLEX, 5, (0, 255, 0), 10)
     return image
 
 
-async def predict_image(image_bytes, obstacle_id, model):
+def predict_image(image_bytes, obstacle_id, model):
     # Convert the bytes data to a NumPy array
     image_array = np.frombuffer(image_bytes, np.uint8)
     # Decode the image using OpenCV
@@ -112,6 +112,9 @@ async def predict_image(image_bytes, obstacle_id, model):
 
         # Check if any objects were detected
         if not results or len(results[0].boxes) == 0:
+            timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+            save_path = os.path.join(SAVE_DIR, f"{obstacle_id}_{timestamp}.jpg")
+            cv2.imwrite(save_path, frame)
             return "NA", None
 
         # Find the largest bounding box
@@ -202,9 +205,19 @@ def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
     if len(images) < 2:
         return "Error: At least two images are required for stitching."
 
-    # Split images into two rows with up to 4 images per row
-    row1_images = images[:4]  # First 4 images for the first row
-    row2_images = images[4:8]  # Next 4 images for the second row
+    num_images = len(images)
+    row_count = 3 if num_images in [5,6] else 4
+
+    first_image = images[0]
+    img_height, img_width = first_image.shape[:2]
+    blank_image = create_blank_image(img_width, img_height)
+
+    if num_images < row_count*2:
+        for _ in range(row_count*2-num_images):
+            images.append(blank_image)
+
+    row1_images = images[:row_count]
+    row2_images = images[row_count: row_count*2]
 
     # Horizontally concatenate the images in each row
     if len(row1_images) > 1:
@@ -231,6 +244,11 @@ def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
     cv2.imwrite(save_path, stitched_image)
 
     return save_path
+
+def create_blank_image(width, height, channels=3, color=(0,0,0)):
+    blank_image = np.zeros((height, width,channels), dtype=np.uint8)
+    blank_image[:] = color
+    return blank_image
 
 def stitch_image_own():
     """
