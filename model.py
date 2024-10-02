@@ -81,17 +81,10 @@ def draw_label(image, x1, y1, x2, y2, label_text):
     """
     img_height, img_width = image.shape[:2]
 
-    # Calculate label position to avoid being cut off
-    label_position = (x1, max(20, y1 - 10))  # Default above the box
-    if y1 < 20:
-        label_position = (x1, y2 + 20)  # Move below the box if too close to top
-
-    # Ensure label does not go beyond image boundaries
-    if x1 + 7 * len(label_text) > img_width:  # Estimate width of text
-        label_position = (img_width - 7 * len(label_text), label_position[1])
+    label_position = (10,130)
 
     # Draw bounding box and label
-    cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 10)
+    cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 20)
     cv2.putText(image, label_text, label_position, cv2.FONT_HERSHEY_SIMPLEX, 5, (0, 255, 0), 10)
     return image
 
@@ -119,13 +112,23 @@ def predict_image(image_bytes, obstacle_id, model):
 
         # Find the largest bounding box
         max_area = 0
+        max_height = 0
         selected_box = None
         for box in results[0].boxes:
             x1, y1, x2, y2 = map(int, box.xyxy[0])
-            area = (x2 - x1) * (y2 - y1)
-            if area > max_area:
-                max_area = area
+
+            # Finding the largest bounding box
+            # area = (x2 - x1) * (y2 - y1)
+            # if area > max_area:
+            #     max_area = area
+            #     selected_box = box
+
+            # Finding the tallest bounding box
+            height = abs(y1 - y2)
+            if height > max_height:
+                max_height = height
                 selected_box = box
+
 
         if selected_box is None:
             return "NA", None
@@ -217,7 +220,7 @@ def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
             images.append(blank_image)
 
     row1_images = images[:row_count]
-    row2_images = images[row_count: row_count*2]
+    row2_images = images[row_count: row_count*2] if num_images > 4 else None
 
     # Horizontally concatenate the images in each row
     if len(row1_images) > 1:
