@@ -142,7 +142,7 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
 @app.get("/stitch")
 def stitch():
     image_dir = SAVE_DIR
-    save_stitched_folder = "./stitched_image_folder"
+    save_stitched_folder = "./stitched_image"
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     save_stitched_path = f"{timestamp}_stitched_image.jpg"
     # return path NOT image
