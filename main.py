@@ -10,7 +10,7 @@ from ultralytics import YOLO
 from threading import Thread
 
 app = FastAPI()
-model = YOLO("./best.pt")
+model = YOLO("./best_v8.pt")
 
 # Add CORS middleware for communicating server requests through different protocols
 app.add_middleware(

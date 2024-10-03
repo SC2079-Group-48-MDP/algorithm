@@ -17,19 +17,19 @@ if not os.path.exists(SAVE_DIR):
     os.makedirs(SAVE_DIR)
 
 yolo_image_mapping = {
-    '1': 0, '2': 1, '3': 2,'4': 3,'5': 4,'6': 5,'7': 6,'8': 7,'9': 8,'A': 9,'B': 10,
-    'BullsEye': 11,'C': 12,'D': 13,'Dot': 14,'Down': 15,'E': 16,'F': 17,'G': 18,'H': 19,
-    'Left': 20,'Right': 21,'S': 22,'T': 23,'U': 24,'Up': 25,'V': 26,'W': 27,'X': 28,
-    'Y': 29,'Z': 30
+    0: '11', 1: '12', 2: '13', 3: '14', 4: '15', 5: '16', 6: '17', 7: '18', 8: '19', 9: '20',
+    10: '21', 11: '22', 12: '23', 13: '24', 14: '25', 15: '26', 16: '27', 17: '28', 18: '29',
+    19: '30', 20: '31', 21: '32', 22: '33', 23: '34', 24: '35', 25: '36', 26: '37', 27: '38',
+    28: '39', 29: '40', 30: '41'
 }
 
 name_to_id = {
-    "NA": 'NA',"BullsEye": 10,"1": 11,"2": 12,"3": 13,"4": 14,"5": 15,
-    "6": 16,"7": 17,"8": 18,"9": 19,"A": 20,"B": 21,"C": 22,"D": 23,"E": 24,
-    "F": 25,"G": 26,"H": 27,"S": 28,"T": 29,"U": 30,"V": 31,"W": 32,"X": 33,"Y": 34,
-    "Z": 35,"Up": 36,"Down": 37,"Right": 38,"Left": 39,"Up Arrow": 36,"Down Arrow": 37,
-    "Right Arrow": 38,"Left Arrow": 39,"Dot": 40
+    'NA': 'NA', 41: "BullsEye", 11: "1", 12: "2", 13: "3", 14: "4", 15: "5",
+    16: "6", 17: "7", 18: "8", 19: "9", 20: "A", 21: "B", 22: "C", 23: "D", 24: "E",
+    25: "F", 26: "G", 27: "H", 28: "S", 29: "T", 30: "U", 31: "V", 32: "W", 33: "X",
+    34: "Y", 35: "Z", 36: "Up", 37: "Down", 38: "Right", 39: "Left", 40: "Stop"
 }
+
 
 def get_random_string(length):
     """
@@ -136,24 +136,20 @@ def predict_image(image_bytes, obstacle_id, model):
         # Process the selected result
         x1, y1, x2, y2 = map(int, selected_box.xyxy[0])
         class_id = int(selected_box.cls.item())
-        class_name = next((key for key, value in yolo_image_mapping.items() if value == class_id), "Unknown")
-        final_image_id = name_to_id.get(class_name, "NA")
 
-        # Adjust the class_name if it is 'Dot'
-        adjusted_class_name = "Stop" if class_name == "Dot" else class_name
-
-        # Prepare the label_text with the adjusted class name and the image ID
-        label_text = f"{adjusted_class_name}, Image ID: {final_image_id}"
+        image_id = yolo_image_mapping.get(class_id, "NA")
+        class_name = name_to_id.get(int(image_id), "NA")
+        label_text = f"{class_name}, Image ID: {image_id}"
 
         # Draw label
         frame = draw_label(frame, x1, y1, x2, y2, label_text)
 
         # Save the annotated frame
         timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        save_path = os.path.join(SAVE_DIR, f"{obstacle_id}_{final_image_id}_{timestamp}.jpg")
+        save_path = os.path.join(SAVE_DIR, f"{obstacle_id}_{image_id}_{timestamp}.jpg")
         cv2.imwrite(save_path, frame)
 
-        return final_image_id, frame
+        return image_id, frame
     else:
         return "NA", None
 
