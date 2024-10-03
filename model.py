@@ -138,6 +138,9 @@ def predict_image(image_bytes, obstacle_id,  model):
         results = model(frame)
 
         # print(results)
+
+        if len(results[0].boxes) == 0:
+            return ("NA", None)
         
         final_image_id = 'NA'
         # Process the results to draw bounding boxes and labels
@@ -163,7 +166,7 @@ def predict_image(image_bytes, obstacle_id,  model):
             cv2.putText(frame, label_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 7)
 
             # Save the annotated frame
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") # change _ to - between day and time
             save_path = os.path.join(SAVE_DIR,
                         f"{obstacle_id}_{final_image_id}_{timestamp}.jpg")
             # Try with .jpeg, .png, .bmp
@@ -228,7 +231,7 @@ def predict_image_week_9(image, model):
     return image_id
 
 
-def stitch_images(image_dir, save_stitched_path, min_obstacle_id=1, max_obstacle_id=8):
+def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
     """
     Stitch the latest images from a specified obstacle range.
 
@@ -245,6 +248,11 @@ def stitch_images(image_dir, save_stitched_path, min_obstacle_id=1, max_obstacle
     """
     images = []
     latest_images = {}
+    min_obstacle_id = 1
+    max_obstacle_id = 8
+
+    if not os.path.exists(save_stitched_folder):
+        os.makedirs(save_stitched_folder)
 
     for filename in os.listdir(image_dir):
         parts = filename.split('_')
@@ -254,7 +262,7 @@ def stitch_images(image_dir, save_stitched_path, min_obstacle_id=1, max_obstacle
         try:
             obstacle_id = int(parts[0])
             timestamp_str = parts[2].replace('.jpg', '')
-            timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S.%f')
+            timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d-%H-%M-%S')
         except (ValueError, IndexError):
             continue
 
@@ -273,34 +281,36 @@ def stitch_images(image_dir, save_stitched_path, min_obstacle_id=1, max_obstacle
 
     stitched_image = cv2.hconcat(images)  # Horizontally concatenate the images
 
-    cv2.imwrite(save_stitched_path, stitched_image)
-    return stitched_image
+    save_path = os.path.join(save_stitched_folder,save_stitched_path)
 
-def stitch_image_own():
-    """
-    Stitches the images in the folder together and saves it into own_results folder
+    cv2.imwrite(save_path, stitched_image)
+    return save_path
 
-    Basically similar to stitch_image() but with different folder names and slightly different drawing of bounding boxes and text
-    """
-    imgFolder = 'own_results'
-    stitchedPath = os.path.join(imgFolder, f'stitched-{int(time.time())}.jpeg')
+# def stitch_image_own():
+#     """
+#     Stitches the images in the folder together and saves it into own_results folder
 
-    imgPaths = glob.glob(os.path.join(imgFolder+"/annotated_image_*.jpg"))
-    imgTimestamps = [imgPath.split("_")[-1][:-4] for imgPath in imgPaths]
+#     Basically similar to stitch_image() but with different folder names and slightly different drawing of bounding boxes and text
+#     """
+#     imgFolder = 'own_results'
+#     stitchedPath = os.path.join(imgFolder, f'stitched-{int(time.time())}.jpeg')
+
+#     imgPaths = glob.glob(os.path.join(imgFolder+"/annotated_image_*.jpg"))
+#     imgTimestamps = [imgPath.split("_")[-1][:-4] for imgPath in imgPaths]
     
-    sortedByTimeStampImages = sorted(zip(imgPaths, imgTimestamps), key=lambda x: x[1])
+#     sortedByTimeStampImages = sorted(zip(imgPaths, imgTimestamps), key=lambda x: x[1])
 
-    images = [Image.open(x[0]) for x in sortedByTimeStampImages]
-    width, height = zip(*(i.size for i in images))
-    total_width = sum(width)
-    max_height = max(height)
-    stitchedImg = Image.new('RGB', (total_width, max_height))
-    x_offset = 0
+#     images = [Image.open(x[0]) for x in sortedByTimeStampImages]
+#     width, height = zip(*(i.size for i in images))
+#     total_width = sum(width)
+#     max_height = max(height)
+#     stitchedImg = Image.new('RGB', (total_width, max_height))
+#     x_offset = 0
 
-    for im in images:
-        stitchedImg.paste(im, (x_offset, 0))
-        x_offset += im.size[0]
-    stitchedImg.save(stitchedPath)
+#     for im in images:
+#         stitchedImg.paste(im, (x_offset, 0))
+#         x_offset += im.size[0]
+#     stitchedImg.save(stitchedPath)
 
-    return stitchedImg
+#     return stitchedImg
 

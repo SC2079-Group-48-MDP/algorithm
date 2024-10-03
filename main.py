@@ -138,14 +138,20 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
 @app.get("/stitch")
 def stitch():
     image_dir = SAVE_DIR
+    save_stitched_folder = "./stitched_image_folder"
     save_stitched_path = "stitched_image.jpg"
-    img = stitch_images(image_dir, save_stitched_path)
-    if img:
-        display_image(img, "Stitched Image")
-    save_stitched_own_path = "stitched_image_own.jpg"
-    img2 = stitch_image_own(image_dir, save_stitched_own_path)
-    if img2:
-        display_image(img2, "Stitched Image (Own)")
+    # return path NOT image
+    path = stitch_images(image_dir, save_stitched_folder, save_stitched_path)
+    # if path: 
+    #     img = cv2.imread(path)
+    #     cv2.imshow("Image", img)
+    #     cv2.waitKey(0)
+    # print(path)
+
+    # save_stitched_own_path = "stitched_image_own.jpg"
+    # img2 = stitch_image_own(image_dir, save_stitched_own_path)
+    # if img2:
+    #     display_image(img2, "Stitched Image (Own)")
 
     # Return a response to show that the image stitching process 
     return JSONResponse({"result": "ok"})
