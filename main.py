@@ -9,9 +9,8 @@ from model import *
 from ultralytics import YOLO
 from threading import Thread
 
-
 app = FastAPI()
-model = YOLO("./best.pt")
+model = YOLO("./best_v8.pt")
 
 # Add CORS middleware for communicating server requests through different protocols
 app.add_middleware(
@@ -42,6 +41,7 @@ def path_finding(content: dict):
 
     # Get the obstacles, big_turn, retrying, robot_x, robot_y, and robot_direction from the json data
     obstacles = content['obstacles']
+    print(obstacles)
     # big_turn = int(content['big_turn'])
     retrying = content['retrying']
     robot_x, robot_y = content['robot_x'], content['robot_y']
@@ -80,6 +80,11 @@ def path_finding(content: dict):
         else:
             i += 1
         path_results.append(optimal_path[i].get_dict())
+    
+    if len(commands) == 1 and commands[0] == "FN":
+        commands = ["BW10", f"SNAP{obstacles[0]['obstacleNumber']}", "FN"]
+    
+    print(commands)
 
     # Sends parameters from pathfinding to /path on API server as a JSON
     return JSONResponse({
@@ -110,7 +115,7 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
     print(f"Received obstacle_id: {obstacle_id}, file size: {len(image_bytes)} bytes")
     #image_id = predict_image(filename, model, signal)
 
-    (image_id, annotated_img) = predict_image(image_bytes, obstacle_id, model)
+    image_id, annotated_img = predict_image(image_bytes, obstacle_id, model)
 
     if annotated_img is not None:
         # thread = Thread(target=display_image, args=(annotated_img,f"Obstacle ID {obstacle_id}, Image ID {image_id}"))
@@ -128,7 +133,8 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
         print("Prediction failed or image could not be processed.")
         result = {
             "obstacle_id": obstacle_id,
-            "retry": True
+            "retry": True,
+            "image_id": "NA"
         }
     
     return JSONResponse(content=result)
@@ -137,22 +143,14 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
 # For stiching together images when called
 @app.get("/stitch")
 def stitch():
-    image_dir = SAVE_DIR
-    save_stitched_folder = "./stitched_image_folder"
-    save_stitched_path = "stitched_image.jpg"
-    # return path NOT image
-    path = stitch_images(image_dir, save_stitched_folder, save_stitched_path)
-    # if path: 
-    #     img = cv2.imread(path)
-    #     cv2.imshow("Image", img)
-    #     cv2.waitKey(0)
-    # print(path)
-
-    # save_stitched_own_path = "stitched_image_own.jpg"
-    # img2 = stitch_image_own(image_dir, save_stitched_own_path)
-    # if img2:
-    #     display_image(img2, "Stitched Image (Own)")
+    image_dir = './annotated_images'
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    save_stitched_folder = './stitched_images'
+    save_stitched_path = f"{timestamp}_stitched_image.jpg"
+    img = stitch_images(image_dir, save_stitched_folder, save_stitched_path)
+    # if img:
+    #     display_image(img, "Stitched Image")
 
     # Return a response to show that the image stitching process 
-    return JSONResponse({"result": "ok"})
+    return JSONResponse({"result": "Stitching is successful!"})
 

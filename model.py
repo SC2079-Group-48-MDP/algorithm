@@ -69,7 +69,6 @@ def display_image(frame, window_name):
     cv2.waitKey(0)  # The window will remain open indefinitely until a key is pressed
     cv2.destroyWindow(window_name)
 
-
 def draw_label(image, x1, y1, x2, y2, label_text):
     """
     Draws a label on the image based on bounding box coordinates.
@@ -82,7 +81,7 @@ def draw_label(image, x1, y1, x2, y2, label_text):
     """
     img_height, img_width = image.shape[:2]
 
-    label_position = (10, 130)
+    label_position = (10,130)
 
     # Draw bounding box and label
     cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 20)
@@ -130,6 +129,7 @@ def predict_image(image_bytes, obstacle_id, model):
                 max_height = height
                 selected_box = box
 
+
         if selected_box is None:
             return "NA", None
 
@@ -152,7 +152,6 @@ def predict_image(image_bytes, obstacle_id, model):
         return image_id, frame
     else:
         return "NA", None
-
 
 def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
     """
@@ -206,18 +205,18 @@ def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
         return "Error: At least two images are required for stitching."
 
     num_images = len(images)
-    row_count = 3 if num_images in [5, 6] else 4
+    row_count = 3 if num_images in [5,6] else 4
 
     first_image = images[0]
     img_height, img_width = first_image.shape[:2]
     blank_image = create_blank_image(img_width, img_height)
 
-    if num_images < row_count * 2:
-        for _ in range(row_count * 2 - num_images):
+    if num_images < row_count*2:
+        for _ in range(row_count*2-num_images):
             images.append(blank_image)
 
     row1_images = images[:row_count]
-    row2_images = images[row_count: row_count * 2] if num_images > 4 else None
+    row2_images = images[row_count: row_count*2] if num_images > 4 else None
 
     # Horizontally concatenate the images in each row
     if len(row1_images) > 1:
@@ -245,12 +244,10 @@ def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
 
     return save_path
 
-
-def create_blank_image(width, height, channels=3, color=(0, 0, 0)):
-    blank_image = np.zeros((height, width, channels), dtype=np.uint8)
+def create_blank_image(width, height, channels=3, color=(0,0,0)):
+    blank_image = np.zeros((height, width,channels), dtype=np.uint8)
     blank_image[:] = color
     return blank_image
-
 
 def stitch_image_own():
     """
