@@ -134,7 +134,7 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
         result = {
             "obstacle_id": obstacle_id,
             "retry": True,
-            "image_id": image_id,
+            "image_id": "NA"
         }
     
     return JSONResponse(content=result)
