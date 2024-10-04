@@ -82,6 +82,9 @@ def path_finding(content: dict):
             i += 1
         path_results.append(optimal_path[i].get_dict())
 
+    if len(commands) == 1 and commands[0] == "FN":
+        commands = ["BW10", f"SNAP{obstacles[0]["obstacleNumber"]}", "FN"]
+
     print(commands)
 
     # Sends parameters from pathfinding to /path on API server as a JSON
@@ -120,11 +123,12 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
         # thread.start()
         
         # display_image(annotated_img, f"Obstacle ID {obstacle_id}, Image ID {image_id}")
+
         # Sends identifiers to /image on API server as a JSON
         result = {
             "obstacle_id": obstacle_id,
             "image_id": image_id,
-            "stop": image_id != 10 #For checklist (Navigating around the obstacle)
+            # "stop": image_id != 10 #For checklist (Navigating around the obstacle)
         }
         
     else:
@@ -146,8 +150,14 @@ def stitch():
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     save_stitched_path = f"{timestamp}_stitched_image.jpg"
     # return path NOT image
-    path = stitch_images(image_dir, save_stitched_folder, save_stitched_path)
-    # if path: 
+    stitched_image = stitch_images(image_dir, save_stitched_folder, save_stitched_path)
+    if stitched_image is not None:
+        print(f"Stitched image shape: {stitched_image.shape}")
+        display_image(stitched_image, f"Stitched Image")
+    else:
+        print("Stitched image is None or invalid.")
+
+
     #     img = cv2.imread(path)
     #     cv2.imshow("Image", img)
     #     cv2.waitKey(0)
