@@ -9,7 +9,6 @@ from model import *
 from ultralytics import YOLO
 from threading import Thread
 
-
 app = FastAPI()
 model = YOLO("./best_v9.pt")
 
@@ -42,6 +41,7 @@ def path_finding(content: dict):
 
     # Get the obstacles, big_turn, retrying, robot_x, robot_y, and robot_direction from the json data
     obstacles = content['obstacles']
+    print(obstacles)
     # big_turn = int(content['big_turn'])
     retrying = content['retrying']
     robot_x, robot_y = content['robot_x'], content['robot_y']
@@ -80,6 +80,11 @@ def path_finding(content: dict):
         else:
             i += 1
         path_results.append(optimal_path[i].get_dict())
+    
+    if len(commands) == 1 and commands[0] == "FN":
+        commands = ["BW10", f"SNAP{obstacles[0]['obstacleNumber']}", "FN"]
+    
+    print(commands)
 
     # Sends parameters from pathfinding to /path on API server as a JSON
     return JSONResponse({
@@ -109,7 +114,7 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
     print(f"Received obstacle_id: {obstacle_id}, file size: {len(image_bytes)} bytes")
     #image_id = predict_image(filename, model, signal)
 
-    (image_id, annotated_img) = predict_image(image_bytes, obstacle_id, model)
+    image_id, annotated_img = predict_image(image_bytes, obstacle_id, model)
 
     if annotated_img is not None:
         # thread = Thread(target=display_image, args=(annotated_img,f"Obstacle ID {obstacle_id}, Image ID {image_id}"))
@@ -152,5 +157,5 @@ def stitch():
     #     display_image(img2, "Stitched Image (Own)")
 
     # Return a response to show that the image stitching process 
-    return JSONResponse({"result": "ok"})
+    return JSONResponse({"result": "Stitching is successful!"})
 
