@@ -11,7 +11,7 @@ from threading import Thread
 
 
 app = FastAPI()
-model = YOLO("./best.pt")
+model = YOLO("./best_v9.pt")
 
 # Add CORS middleware for communicating server requests through different protocols
 app.add_middleware(
@@ -103,7 +103,6 @@ def display_image(frame, window_name):
 # Outputs known image id as JSON
 @app.post("/image")
 async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(...), signal: str = Form(...)):
-    #filename = files.filename
 
     image_bytes = await files.read()
     # Add more debugging or validation here
@@ -121,14 +120,15 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
         result = {
             "obstacle_id": obstacle_id,
             "image_id": image_id,
-            "stop": image_id != 10 #For checklist (Navigating around the obstacle)
+            #"stop": image_id != 10 #For checklist (Navigating around the obstacle)
         }
         
     else:
         print("Prediction failed or image could not be processed.")
         result = {
             "obstacle_id": obstacle_id,
-            "retry": True
+            "retry": True,
+            "image_id": image_id
         }
     
     return JSONResponse(content=result)
@@ -141,12 +141,10 @@ def stitch():
     save_stitched_folder = "./stitched_image_folder"
     save_stitched_path = "stitched_image.jpg"
     # return path NOT image
-    path = stitch_images(image_dir, save_stitched_folder, save_stitched_path)
-    # if path: 
-    #     img = cv2.imread(path)
-    #     cv2.imshow("Image", img)
+    stitched_image = stitch_images(image_dir, save_stitched_folder, save_stitched_path)
+    # if stitched_image: 
+    #     cv2.imshow("Stitched Image", stitched_image)
     #     cv2.waitKey(0)
-    # print(path)
 
     # save_stitched_own_path = "stitched_image_own.jpg"
     # img2 = stitch_image_own(image_dir, save_stitched_own_path)

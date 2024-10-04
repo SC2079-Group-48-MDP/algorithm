@@ -168,7 +168,6 @@ def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
     -------
     str - path to the saved stitched image
     """
-
     images = []
     latest_images = {}
     min_obstacle_id = 1
@@ -177,12 +176,10 @@ def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
     if not os.path.exists(save_stitched_folder):
         os.makedirs(save_stitched_folder)
 
-    # Find the latest images for each obstacle within the specified range
     for filename in os.listdir(image_dir):
         parts = filename.split('_')
         if len(parts) < 3:
-            continue  # Skip files that don't match the expected format
-
+            continue
         try:
             obstacle_id = int(parts[0])
             timestamp_str = parts[2].replace('.jpg', '')
@@ -194,56 +191,43 @@ def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
             if obstacle_id not in latest_images or latest_images[obstacle_id]['timestamp'] < timestamp:
                 latest_images[obstacle_id] = {'timestamp': timestamp, 'filename': filename}
 
-    # Load the latest images
     for obstacle_id in sorted(latest_images.keys()):
         img_path = os.path.join(image_dir, latest_images[obstacle_id]['filename'])
         img = cv2.imread(img_path)
         if img is not None:
             images.append(img)
+        else:
+            print(f"Failed to load image: {img_path}")
 
-    # Ensure there are at least 2 images to stitch
     if len(images) < 2:
-        return "Error: At least two images are required for stitching."
+        return None  # Return None to signal failure in stitching
 
-    num_images = len(images)
-    row_count = 3 if num_images in [5, 6] else 4
-
+    row_count = 3 if len(images) in [5,6] else 4
     first_image = images[0]
     img_height, img_width = first_image.shape[:2]
     blank_image = create_blank_image(img_width, img_height)
 
-    if num_images < row_count * 2:
-        for _ in range(row_count * 2 - num_images):
+    if len(images) < row_count*2:
+        for _ in range(row_count*2 - len(images)):
             images.append(blank_image)
 
     row1_images = images[:row_count]
-    row2_images = images[row_count: row_count * 2] if num_images > 4 else None
+    row2_images = images[row_count: row_count*2] if len(images) > 4 else None
 
-    # Horizontally concatenate the images in each row
-    if len(row1_images) > 1:
-        row1_stitched = cv2.hconcat(row1_images)
-    else:
-        row1_stitched = row1_images[0]  # If only one image in the row
+    row1_stitched = cv2.hconcat(row1_images) if len(row1_images) > 1 else row1_images[0]
+    row2_stitched = cv2.hconcat(row2_images) if row2_images and len(row2_images) > 1 else row2_images[0] if row2_images else None
 
-    if row2_images:
-        if len(row2_images) > 1:
-            row2_stitched = cv2.hconcat(row2_images)
-        else:
-            row2_stitched = row2_images[0]  # If only one image in the row
-    else:
-        row2_stitched = None
+    stitched_image = cv2.vconcat([row1_stitched, row2_stitched]) if row2_stitched is not None else row1_stitched
 
-    # Vertically concatenate the two rows if both rows exist
-    if row2_stitched is not None:
-        stitched_image = cv2.vconcat([row1_stitched, row2_stitched])
-    else:
-        stitched_image = row1_stitched
+    if stitched_image is None:
+        print("Stitching failed.")
+        return None
 
-    # Save the stitched image
     save_path = os.path.join(save_stitched_folder, save_stitched_path)
     cv2.imwrite(save_path, stitched_image)
 
-    return save_path
+    return stitched_image
+
 
 
 def create_blank_image(width, height, channels=3, color=(0, 0, 0)):
