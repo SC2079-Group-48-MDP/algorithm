@@ -55,18 +55,19 @@ def load_model():
     return model
 
 
-def display_image(frame, window_name):
-    """
-    Displays an image in a window that stays open indefinitely.
-    Inputs
-    ------
-    frame: numpy array - the image to display
-    window_name: str - the name of the display window
-    """
+def display_image(frame, window_name, width=None, height=None):
+    """Display the image in a window that does not close automatically and allows resizing."""
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    
+    # If width and height are specified, resize the window
+    if width is not None and height is not None:
+        cv2.resizeWindow(window_name, width, height)
+    else: 
+        cv2.resizeWindow(window_name, 1200, 1000)
+    
     cv2.imshow(window_name, frame)
     cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
-    cv2.waitKey(0)  # The window will remain open indefinitely until a key is pressed
+    cv2.waitKey(10000)
     cv2.destroyWindow(window_name)
 
 def draw_label(image, x1, y1, x2, y2, label_text):
