@@ -97,12 +97,19 @@ def path_finding(content: dict):
         "error": None
     })
 
-def display_image(frame, window_name):
-    """Display the image in a window that does not close automatically."""
+def display_image(frame, window_name, width=None, height=None):
+    """Display the image in a window that does not close automatically and allows resizing."""
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    
+    # If width and height are specified, resize the window
+    if width is not None and height is not None:
+        cv2.resizeWindow(window_name, width, height)
+    else: 
+        cv2.resizeWindow(window_name, 1200, 1000)
+    
     cv2.imshow(window_name, frame)
     cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
-    cv2.waitKey(0)
+    cv2.waitKey(15000)
     cv2.destroyWindow(window_name)
 
 # When called, will process the image and identify which of the known images it is
