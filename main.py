@@ -8,9 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from model import *
 from ultralytics import YOLO
 from threading import Thread
+from datetime import datetime
+
 
 app = FastAPI()
-model = YOLO("./best_v10.pt")
+model = YOLO("./best_v9.pt")
 
 # Add CORS middleware for communicating server requests through different protocols
 app.add_middleware(
@@ -41,7 +43,6 @@ def path_finding(content: dict):
 
     # Get the obstacles, big_turn, retrying, robot_x, robot_y, and robot_direction from the json data
     obstacles = content['obstacles']
-    print(obstacles)
     # big_turn = int(content['big_turn'])
     retrying = content['retrying']
     robot_x, robot_y = content['robot_x'], content['robot_y']
@@ -80,10 +81,10 @@ def path_finding(content: dict):
         else:
             i += 1
         path_results.append(optimal_path[i].get_dict())
-    
+
     if len(commands) == 1 and commands[0] == "FN":
-        commands = ["BW10", f"SNAP{obstacles[0]['obstacleNumber']}", "FN"]
-    
+        commands = ["BW10", f"SNAP{obstacles[0]["obstacleNumber"]}", "FN"]
+
     print(commands)
 
     # Sends parameters from pathfinding to /path on API server as a JSON
@@ -96,36 +97,45 @@ def path_finding(content: dict):
         "error": None
     })
 
-def display_image(frame, window_name):
-    """Display the image in a window that does not close automatically."""
+def display_image(frame, window_name, width=None, height=None):
+    """Display the image in a window that does not close automatically and allows resizing."""
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    
+    # If width and height are specified, resize the window
+    if width is not None and height is not None:
+        cv2.resizeWindow(window_name, width, height)
+    else: 
+        cv2.resizeWindow(window_name, 1200, 1000)
+    
     cv2.imshow(window_name, frame)
     cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
-    cv2.waitKey(0)
+    cv2.waitKey(15000)
     cv2.destroyWindow(window_name)
 
 # When called, will process the image and identify which of the known images it is
 # Outputs known image id as JSON
 @app.post("/image")
 async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(...), signal: str = Form(...)):
+    #filename = files.filename
 
     image_bytes = await files.read()
     # Add more debugging or validation here
     print(f"Received obstacle_id: {obstacle_id}, file size: {len(image_bytes)} bytes")
     #image_id = predict_image(filename, model, signal)
 
-    image_id, annotated_img = predict_image(image_bytes, obstacle_id, model)
+    (image_id, annotated_img) = predict_image(image_bytes, obstacle_id, model)
 
     if annotated_img is not None:
         # thread = Thread(target=display_image, args=(annotated_img,f"Obstacle ID {obstacle_id}, Image ID {image_id}"))
         # thread.start()
         
         # display_image(annotated_img, f"Obstacle ID {obstacle_id}, Image ID {image_id}")
+
         # Sends identifiers to /image on API server as a JSON
         result = {
             "obstacle_id": obstacle_id,
             "image_id": image_id,
-            #"stop": image_id != 10 #For checklist (Navigating around the obstacle)
+            # "stop": image_id != 10 #For checklist (Navigating around the obstacle)
         }
         
     else:
@@ -133,7 +143,7 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
         result = {
             "obstacle_id": obstacle_id,
             "retry": True,
-            "image_id": image_id
+            "image_id": "NA"
         }
     
     return JSONResponse(content=result)
@@ -143,13 +153,22 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
 @app.get("/stitch")
 def stitch():
     image_dir = SAVE_DIR
-    save_stitched_folder = "./stitched_image_folder"
-    save_stitched_path = "stitched_image.jpg"
+    save_stitched_folder = "./stitched_image"
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    save_stitched_path = f"{timestamp}_stitched_image.jpg"
     # return path NOT image
     stitched_image = stitch_images(image_dir, save_stitched_folder, save_stitched_path)
-    # if stitched_image: 
-    #     cv2.imshow("Stitched Image", stitched_image)
+    if stitched_image is not None:
+        print(f"Stitched image shape: {stitched_image.shape}")
+        display_image(stitched_image, f"Stitched Image")
+    else:
+        print("Stitched image is None or invalid.")
+
+
+    #     img = cv2.imread(path)
+    #     cv2.imshow("Image", img)
     #     cv2.waitKey(0)
+    # print(path)
 
     # save_stitched_own_path = "stitched_image_own.jpg"
     # img2 = stitch_image_own(image_dir, save_stitched_own_path)
@@ -157,5 +176,5 @@ def stitch():
     #     display_image(img2, "Stitched Image (Own)")
 
     # Return a response to show that the image stitching process 
-    return JSONResponse({"result": "Stitching is successful!"})
+    return JSONResponse({"result": "ok"})
 

@@ -55,18 +55,19 @@ def load_model():
     return model
 
 
-def display_image(frame, window_name):
-    """
-    Displays an image in a window that stays open indefinitely.
-    Inputs
-    ------
-    frame: numpy array - the image to display
-    window_name: str - the name of the display window
-    """
+def display_image(frame, window_name, width=None, height=None):
+    """Display the image in a window that does not close automatically and allows resizing."""
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    
+    # If width and height are specified, resize the window
+    if width is not None and height is not None:
+        cv2.resizeWindow(window_name, width, height)
+    else: 
+        cv2.resizeWindow(window_name, 1200, 1000)
+    
     cv2.imshow(window_name, frame)
     cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
-    cv2.waitKey(0)  # The window will remain open indefinitely until a key is pressed
+    cv2.waitKey(10000)
     cv2.destroyWindow(window_name)
 
 def draw_label(image, x1, y1, x2, y2, label_text):
@@ -136,6 +137,8 @@ def predict_image(image_bytes, obstacle_id, model):
         # Process the selected result
         x1, y1, x2, y2 = map(int, selected_box.xyxy[0])
         class_id = int(selected_box.cls.item())
+        if class_id == 30:
+            return "NA", None
 
         image_id = yolo_image_mapping.get(class_id, "NA")
         class_name = name_to_id.get(int(image_id), "NA")
@@ -199,22 +202,19 @@ def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
             print(f"Failed to load image: {img_path}")
 
     if len(images) < 2:
-        return "Error: At least two images are required for stitching."
-
-    num_images = len(images)
-    row_count = 3 if num_images in [5,6] else 4
+        return None  # Return None to signal failure in stitching
 
     row_count = 3 if len(images) in [5,6] else 4
     first_image = images[0]
     img_height, img_width = first_image.shape[:2]
     blank_image = create_blank_image(img_width, img_height)
 
-    if num_images < row_count*2:
-        for _ in range(row_count*2-num_images):
+    if len(images) < row_count*2:
+        for _ in range(row_count*2 - len(images)):
             images.append(blank_image)
 
     row1_images = images[:row_count]
-    row2_images = images[row_count: row_count*2] if num_images > 4 else None
+    row2_images = images[row_count: row_count*2] if len(images) > 4 else None
 
     row1_stitched = cv2.hconcat(row1_images) if len(row1_images) > 1 else row1_images[0]
     row2_stitched = cv2.hconcat(row2_images) if row2_images and len(row2_images) > 1 else row2_images[0] if row2_images else None
@@ -228,7 +228,8 @@ def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
     save_path = os.path.join(save_stitched_folder, save_stitched_path)
     cv2.imwrite(save_path, stitched_image)
 
-    return save_path
+    return stitched_image
+
 
 def create_blank_image(width, height, channels=3, color=(0,0,0)):
     blank_image = np.zeros((height, width,channels), dtype=np.uint8)
