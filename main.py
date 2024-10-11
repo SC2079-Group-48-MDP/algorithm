@@ -12,7 +12,7 @@ from datetime import datetime
 
 
 app = FastAPI()
-model = YOLO("./best_2.pt")
+model = YOLO("./best_v12.pt")
 
 # Add CORS middleware for communicating server requests through different protocols
 app.add_middleware(
@@ -109,7 +109,7 @@ def display_image(frame, window_name, width=None, height=None):
     
     cv2.imshow(window_name, frame)
     cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
-    cv2.waitKey(10000)
+    cv2.waitKey(0)
     cv2.destroyWindow(window_name)
 
 # When called, will process the image and identify which of the known images it is
@@ -199,4 +199,6 @@ def stitch():
 
     # Return a response to show that the image stitching process 
     return JSONResponse({"result": "success"})
+
+
 

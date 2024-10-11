@@ -299,6 +299,64 @@ def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
 
     return stitched_image
 
+def stitch_images2(image_dir, save_stitched_folder, save_stitched_path):
+    """
+    Stitch the latest images into two rows of up to 4 images each.
+
+    Inputs
+    ------
+    image_dir: str - the directory where images are stored
+    save_stitched_folder: str - the folder to save the stitched image
+    save_stitched_path: str - the path to save the stitched image
+
+    Returns
+    -------
+    str - path to the saved stitched image
+    """
+    images = []
+    latest_images = {"small": None, "big": None}
+
+    if not os.path.exists(save_stitched_folder):
+        os.makedirs(save_stitched_folder)
+
+    for filename in os.listdir(image_dir):
+        parts = filename.split('_')
+        if len(parts) < 3:
+            continue
+        try:
+            obstacle_id = parts[0]
+            timestamp_str = parts[2].replace('.jpg', '')
+            timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d-%H-%M-%S')
+        except (ValueError, IndexError):
+            continue
+
+        if obstacle_id in latest_images:
+            if latest_images[obstacle_id] is None or latest_images[obstacle_id]['timestamp'] < timestamp:
+                latest_images[obstacle_id] = {"timestamp": timestamp, 'filename': filename}
+
+    for obstacle_id, data in latest_images.items():
+        if data is not None: 
+            img_path = os.path.join(image_dir, data["filename"])
+            img = cv2.imread(img_path)
+            if img is not None:
+                images.append(img)
+            else: print(f"Failed to load image: {img_path}")
+
+    if len(images) < 2:
+        print("Not enough images to stitch.")
+        return None  # Return None to signal failure in stitching
+
+    stitched_image = cv2.hconcat(images)
+    
+    if stitched_image is None:
+        print("Stitching failed.")
+        return None
+
+    save_path = os.path.join(save_stitched_folder, save_stitched_path)
+    cv2.imwrite(save_path, stitched_image)
+
+    return stitched_image
+
 
 def create_blank_image(width, height, channels=3, color=(0,0,0)):
     blank_image = np.zeros((height, width,channels), dtype=np.uint8)
