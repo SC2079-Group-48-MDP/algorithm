@@ -15,15 +15,19 @@ SAVE_DIR = "./annotated_images"
 if not os.path.exists(SAVE_DIR):
     os.makedirs(SAVE_DIR)
 
-yolo_image_mapping = {
+task1_mapping = {
     0: '11', 1: '12', 2: '13', 3: '14', 4: '15', 5: '16', 6: '17', 7: '18', 8: '19', 9: '20',
     10: '21', 11: '22', 12: '23', 13: '24', 14: '25', 15: '26', 16: '27', 17: '28', 18: '29',
     19: '30', 20: '31', 21: '32', 22: '33', 23: '34', 24: '35', 25: '36', 26: '37', 27: '38',
     28: '39', 29: '40', 30: '41'
 }
 
+task2_mapping = {
+    'BullsEye': 11, 'Left': 20,'Right': 21
+}
+
 name_to_id = {
-    'NA': 'NA', 41: "BullsEye", 11: "1", 12: "2", 13: "3", 14: "4", 15: "5",
+    -1: 'NA', 41: "BullsEye", 11: "1", 12: "2", 13: "3", 14: "4", 15: "5",
     16: "6", 17: "7", 18: "8", 19: "9", 20: "A", 21: "B", 22: "C", 23: "D", 24: "E",
     25: "F", 26: "G", 27: "H", 28: "S", 29: "T", 30: "U", 31: "V", 32: "W", 33: "X",
     34: "Y", 35: "Z", 36: "Up", 37: "Down", 38: "Right", 39: "Left", 40: "Stop"
@@ -140,7 +144,7 @@ def predict_image(image_bytes, obstacle_id, model):
         if class_id == 30:
             return "NA", None
 
-        image_id = yolo_image_mapping.get(class_id, "NA")
+        image_id = task1_mapping.get(class_id, -1)
         class_name = name_to_id.get(int(image_id), "NA")
         label_text = f"{class_name}, Image ID: {image_id}"
 
@@ -155,6 +159,71 @@ def predict_image(image_bytes, obstacle_id, model):
         return image_id, frame
     else:
         return "NA", None
+    
+def predict_image2(image_bytes, obstacle_id, model):
+    # Convert the bytes data to a NumPy array
+    image_array = np.frombuffer(image_bytes, np.uint8)
+    # Decode the image using OpenCV
+    frame = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+
+    # Check if the frame is received correctly
+    if frame is not None:
+        # Retrieve the dimensions of the frame
+        img_height, img_width, _ = frame.shape
+
+        # Run object detection using the provided model
+        results = model(frame)
+
+        # Check if any objects were detected
+        if not results or len(results[0].boxes) == 0:
+            timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+            save_path = os.path.join(SAVE_DIR, f"{obstacle_id}_{timestamp}.jpg")
+            cv2.imwrite(save_path, frame)
+            return None
+
+        # Find the largest bounding box
+        max_area = 0
+        max_height = 0
+        selected_box = None
+        for box in results[0].boxes:
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+
+            # Finding the largest bounding box
+            # area = (x2 - x1) * (y2 - y1)
+            # if area > max_area:
+            #     max_area = area
+            #     selected_box = box
+
+            # Finding the tallest bounding box
+            height = abs(y1 - y2)
+            if height > max_height:
+                max_height = height
+                selected_box = box
+
+
+        if selected_box is None:
+            return None
+
+        # Process the selected result
+        x1, y1, x2, y2 = map(int, selected_box.xyxy[0])
+        class_id = int(selected_box.cls.item())
+        # Reverse lookup the class name from yolo_image_mapping
+        class_name = next((key for key, value in task2_mapping.items() if value == class_id), "Unknown")
+        image_id = name_to_id.get(class_name, "NA")
+
+        label_text = f"{class_name}, Image ID: {image_id}"
+
+        # Draw label
+        frame = draw_label(frame, x1, y1, x2, y2, label_text)
+
+        # Save the annotated frame
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        save_path = os.path.join(SAVE_DIR, f"{obstacle_id}_{image_id}_{timestamp}.jpg")
+        cv2.imwrite(save_path, frame)
+
+        return class_name
+    else:
+        return None
 
 def stitch_images(image_dir, save_stitched_folder, save_stitched_path):
     """

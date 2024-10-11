@@ -12,7 +12,7 @@ from datetime import datetime
 
 
 app = FastAPI()
-model = YOLO("./best_v9.pt")
+model = YOLO("./best_2.pt")
 
 # Add CORS middleware for communicating server requests through different protocols
 app.add_middleware(
@@ -109,7 +109,7 @@ def display_image(frame, window_name, width=None, height=None):
     
     cv2.imshow(window_name, frame)
     cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
-    cv2.waitKey(15000)
+    cv2.waitKey(10000)
     cv2.destroyWindow(window_name)
 
 # When called, will process the image and identify which of the known images it is
@@ -120,7 +120,7 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
 
     image_bytes = await files.read()
     # Add more debugging or validation here
-    print(f"Received obstacle_id: {obstacle_id}, file size: {len(image_bytes)} bytes")
+    #print(f"Received obstacle_id: {obstacle_id}, file size: {len(image_bytes)} bytes")
     #image_id = predict_image(filename, model, signal)
 
     (image_id, annotated_img) = predict_image(image_bytes, obstacle_id, model)
@@ -148,6 +148,34 @@ async def image_predict(files: UploadFile = File(...), obstacle_id: str = Form(.
     
     return JSONResponse(content=result)
 
+@app.post("/image2")
+async def image_predict2(files: UploadFile = File(...), obstacle_id: str = Form(...), signal: str = Form(...)):
+    #filename = files.filename
+
+    image_bytes = await files.read()
+    # Add more debugging or validation here
+    #print(f"Received obstacle_id: {obstacle_id}, file size: {len(image_bytes)} bytes")
+    #image_id = predict_image(filename, model, signal)
+
+    class_name = predict_image2(image_bytes, obstacle_id, model)
+
+    if class_name is not None:
+        # Sends identifiers to /image on API server as a JSON
+        result = {
+            "obstacle_id": obstacle_id,
+            "class_name": class_name,
+            # "stop": image_id != 10 #For checklist (Navigating around the obstacle)
+        }
+        
+    else:
+        print("Prediction failed or image could not be processed.")
+        result = {
+            "obstacle_id": obstacle_id,
+            "class_name": "NA"
+        }
+    
+    return JSONResponse(content=result)
+
 
 # For stiching together images when called
 @app.get("/stitch")
@@ -156,19 +184,13 @@ def stitch():
     save_stitched_folder = "./stitched_image"
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     save_stitched_path = f"{timestamp}_stitched_image.jpg"
-    # return path NOT image
+    # return stitched image
     stitched_image = stitch_images(image_dir, save_stitched_folder, save_stitched_path)
     if stitched_image is not None:
         print(f"Stitched image shape: {stitched_image.shape}")
         display_image(stitched_image, f"Stitched Image")
     else:
-        print("Stitched image is None or invalid.")
-
-
-    #     img = cv2.imread(path)
-    #     cv2.imshow("Image", img)
-    #     cv2.waitKey(0)
-    # print(path)
+        return JSONResponse({"result": "failed"})
 
     # save_stitched_own_path = "stitched_image_own.jpg"
     # img2 = stitch_image_own(image_dir, save_stitched_own_path)
@@ -176,5 +198,5 @@ def stitch():
     #     display_image(img2, "Stitched Image (Own)")
 
     # Return a response to show that the image stitching process 
-    return JSONResponse({"result": "ok"})
+    return JSONResponse({"result": "success"})
 
