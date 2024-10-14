@@ -116,6 +116,9 @@ def predict_image(image_bytes, obstacle_id, model):
             cv2.imwrite(save_path, frame)
             return "NA", None
 
+        # Filter out boxes with class_id == 30 (Bullseyes)
+        boxes = [box for box in results[0].boxes if int(box.cls.item()) != 30]
+
         # Find the largest bounding box
         max_area = 0
         max_height = 0
@@ -142,8 +145,6 @@ def predict_image(image_bytes, obstacle_id, model):
         # Process the selected result
         x1, y1, x2, y2 = map(int, selected_box.xyxy[0])
         class_id = int(selected_box.cls.item())
-        if class_id == 30:
-            return "NA", None
 
         image_id = task1_mapping.get(class_id, -1)
         class_name = name_to_id.get(int(image_id), "NA")
@@ -182,6 +183,9 @@ def predict_image2(image_bytes, obstacle_id, model):
             cv2.imwrite(save_path, frame)
             return None
 
+        # Filter out boxes with class_id == 2 (Bullseyes)
+        boxes = [box for box in results[0].boxes if int(box.cls.item()) != 2]
+
         # Find the largest bounding box
         max_area = 0
         max_height = 0
@@ -208,9 +212,11 @@ def predict_image2(image_bytes, obstacle_id, model):
         # Process the selected result
         x1, y1, x2, y2 = map(int, selected_box.xyxy[0])
         class_id = int(selected_box.cls.item())
-        # Reverse lookup the class name from yolo_image_mapping
-        class_name = next((key for key, value in task2_mapping.items() if value == class_id), "Unknown")
-        image_id = name_to_id.get(class_name, "NA")
+        # Reverse lookup the class name from yolo_image_mapping (old model)
+        # class_name = next((key for key, value in task2_mapping.items() if value == class_id), "Unknown")
+        # image_id = name_to_id.get(class_name, "NA")
+        image_id = task2_mapping.get(class_id, -1)
+        class_name = name_to_id.get(int(image_id), "NA")
 
         label_text = f"{class_name}, Image ID: {image_id}"
 
