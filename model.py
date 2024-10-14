@@ -23,7 +23,8 @@ task1_mapping = {
 }
 
 task2_mapping = {
-    'BullsEye': 11, 'Left': 20,'Right': 21
+    #'BullsEye': 11, 'Left': 20,'Right': 21
+    0: "38", 1: "39", 2: "41"
 }
 
 name_to_id = {
