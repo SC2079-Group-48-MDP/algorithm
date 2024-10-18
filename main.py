@@ -12,7 +12,7 @@ from datetime import datetime
 
 
 app = FastAPI()
-model = YOLO("./best_v12.pt")
+model = YOLO("./best_v12.pt").to('cuda')
 
 # Add CORS middleware for communicating server requests through different protocols
 app.add_middleware(

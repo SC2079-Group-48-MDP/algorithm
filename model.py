@@ -91,7 +91,7 @@ def draw_label(image, x1, y1, x2, y2, label_text):
 
     # Draw bounding box and label
     cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 20)
-    cv2.putText(image, label_text, label_position, cv2.FONT_HERSHEY_SIMPLEX, 5, (0, 255, 0), 10)
+    cv2.putText(image, label_text, label_position, cv2.FONT_HERSHEY_SIMPLEX, 5, (0, 255, 0), 20)
     return image
 
 
@@ -107,7 +107,7 @@ def predict_image(image_bytes, obstacle_id, model):
         img_height, img_width, _ = frame.shape
 
         # Run object detection using the provided model
-        results = model(frame)
+        results = model(frame, device='cuda')
 
         # Check if any objects were detected
         if not results or len(results[0].boxes) == 0:
@@ -123,7 +123,7 @@ def predict_image(image_bytes, obstacle_id, model):
         max_area = 0
         max_height = 0
         selected_box = None
-        for box in results[0].boxes:
+        for box in boxes:
             x1, y1, x2, y2 = map(int, box.xyxy[0])
 
             # Finding the largest bounding box
@@ -174,7 +174,7 @@ def predict_image2(image_bytes, obstacle_id, model):
         img_height, img_width, _ = frame.shape
 
         # Run object detection using the provided model
-        results = model(frame)
+        results = model(frame, device='cuda')
 
         # Check if any objects were detected
         if not results or len(results[0].boxes) == 0:
@@ -190,7 +190,7 @@ def predict_image2(image_bytes, obstacle_id, model):
         max_area = 0
         max_height = 0
         selected_box = None
-        for box in results[0].boxes:
+        for box in boxes:
             x1, y1, x2, y2 = map(int, box.xyxy[0])
 
             # Finding the largest bounding box

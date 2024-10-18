@@ -12,7 +12,8 @@ from datetime import datetime
 
 
 app = FastAPI()
-model = YOLO("./best_2.pt")
+model = YOLO("./best_task2_pruned.pt")
+model.to('cuda')
 
 # Add CORS middleware for communicating server requests through different protocols
 app.add_middleware(
@@ -151,7 +152,7 @@ def stitch():
     # return stitched image
     stitched_image = stitch_images2(image_dir, save_stitched_folder, save_stitched_path)
     if stitched_image is not None:
-        print(f"Stitched image shape: {stitched_image.shape}")
+        #print(f"Stitched image shape: {stitched_image.shape}")
         display_image(stitched_image, f"Stitched Image")
     else:
         return JSONResponse({"result": "failed"})
